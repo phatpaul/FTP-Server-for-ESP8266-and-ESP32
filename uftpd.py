@@ -45,7 +45,7 @@ _month_name = ("", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"
 class FTP_client:
 
     def __init__(self, ftpsocket):
-        global AP_addr, STA_addr
+        global AP_addr, STA_addr, ETH_addr
         self.command_client, self.remote_addr = ftpsocket.accept()
         self.remote_addr = self.remote_addr[0]
         self.command_client.settimeout(_COMMAND_TIMEOUT)
@@ -59,11 +59,13 @@ class FTP_client:
         self.DATA_PORT = 20
         self.active = True
         # check which interface was used by comparing the caller's ip adress with the ip adresses 
-        # of STA and AP; consider netmask; select IP address for passive mode
+        # of STA and AP and Eth; consider netmask; select IP address for passive mode
         if ((AP_addr[1] & AP_addr[2]) == (num_ip(self.remote_addr) & AP_addr[2])):
             self.pasv_data_addr = AP_addr[0]
         elif ((STA_addr[1] & STA_addr[2]) == (num_ip(self.remote_addr) & STA_addr[2])):
             self.pasv_data_addr = STA_addr[0]
+        elif ((ETH_addr[1] & ETH_addr[2]) == (num_ip(self.remote_addr) & ETH_addr[2])):
+            self.pasv_data_addr = ETH_addr[0]
         else:
             self.pasv_data_addr = "0.0.0.0" # Ivalid value
 
@@ -439,7 +441,13 @@ def start(port=21, verbose = 0, splash = True):
         STA_addr = (ifconfig[0], num_ip(ifconfig[0]), num_ip(ifconfig[1]))
         if splash:
             print("FTP server started on {}:{}".format(ifconfig[0], port))
-
+    wlan = network.LAN()
+    if wlan.active(): 
+        ifconfig = wlan.ifconfig()
+        # save IP address string and numerical values of IP adress and netmask
+        STA_addr = (ifconfig[0], num_ip(ifconfig[0]), num_ip(ifconfig[1]))
+        if splash:
+            print("FTP server started on {}:{}".format(ifconfig[0], port))
 def restart(port=21, verbose = 0, splash = True):
     stop()
     sleep_ms(200)
